@@ -1,5 +1,6 @@
 package com.example.reading_writing_files.reading_writing_files;
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,31 +25,43 @@ public class AddNewFruit {
         this.jsonFile = file;
     }
 
-    public Fruit addFruitToList(String name, String color) throws IOException {
+    public String addFruitToList(int i, String name, String color) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
-        Fruit fruit = new Fruit("pear","green");
+        AddFruitDto fruit = new AddFruitDto(name, color);
 
-        String json =  readJsonFile();
-        List<Fruit> fruitsList;
-        if(json.isEmpty()){
-            fruitsList =  new ArrayList<>();
+        String json = readJsonFile();
+        List<AddFruitDto> fruitsList;
+        if (json.isEmpty()) {
+            fruitsList = new ArrayList<>();
+        } else {
+            fruitsList = mapper.readValue(json, new TypeReference<List<AddFruitDto>>(){});
         }
-        else{
-            fruitsList = mapper.readValue(json, new TypeReference<>(){});
-        }
-        System.out.println("fruitsList = " + fruitsList);
         fruitsList.add(fruit);
-        String updatedFruits =  mapper.writeValueAsString(fruitsList);
+        String updatedFruits = mapper.writeValueAsString(fruitsList);
         writeFile(updatedFruits);
-        return fruit;
+        return name;
+    }
+
+    public String getFruitFromList() throws IOException {
+        List<Fruit> fruits = new ObjectMapper().readValue((JsonParser) jsonFile, new TypeReference<>() {
+        });
+        System.out.println("fruits = " + fruits);
+        Fruit fruitFiltered = fruits
+                .stream()
+                .filter(fruit -> fruit.getColor() == "yellow")
+                .findFirst()
+                .orElse(null);
+        return fruitFiltered.getName();
     }
 
     public String readJsonFile() throws IOException {
         return Files.readString(jsonFile);
     }
+
     private void writeFile(String input) throws IOException {
         Files.write(jsonFile, input.getBytes());
     }
+
     public void emptyFile() throws IOException {
         writeFile("");
     }
